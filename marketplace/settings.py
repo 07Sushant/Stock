@@ -22,7 +22,7 @@ SECRET_KEY = 'django-insecure-2pn&tr#rqk%yw=sxa7(8nuff@n=9_83pie@n7r(d_3lkz1!vlz
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['stock-7ktg.onrender.com']
 
 
 INSTALLED_APPS = [
