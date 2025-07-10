@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - TradePro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        .file-drop-zone {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.3s ease;
+        }
+        .file-drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+        }
+        .form-step {
+            display: none;
+        }
+        .form-step.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <!-- Header -->
+            <div class="text-center">
+                <div class="flex justify-center mb-4">
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-full">
+                        <i class="fas fa-chart-line text-white text-2xl"></i>
+                    </div>
+                </div>
+                <h2 class="text-3xl font-bold text-gray-900">Create Your Account</h2>
+                <p class="mt-2 text-sm text-gray-600">Join thousands of traders on TradePro</p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="flex justify-center mb-8">
+                <div class="flex space-x-2">
+                    <div class="w-8 h-2 bg-blue-600 rounded-full" id="step-1-progress"></div>
+                    <div class="w-8 h-2 bg-gray-300 rounded-full" id="step-2-progress"></div>
+                    <div class="w-8 h-2 bg-gray-300 rounded-full" id="step-3-progress"></div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <form method="POST" enctype="multipart/form-data" id="registrationForm">
+                    {% csrf_token %}
+
+                    <!-- Error Messages -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <div class="flex">
+                                    <i class="fas fa-exclamation-circle text-red-500 mr-2 mt-1"></i>
+                                    <span class="text-red-800">{{ message }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- Step 1: Basic Information -->
+                    <div class="form-step active" id="step-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-user text-gray-400"></i>
+                                    </div>
+                                    <input type="text" name="username" id="username" required
+                                           class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="Enter your username">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-envelope text-gray-400"></i>
+                                    </div>
+                                    <input type="email" name="email" id="email" required
+                                           class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="Enter your email">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-lock text-gray-400"></i>
+                                    </div>
+                                    <input type="password" name="password" id="password" required
+                                           class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="Create a strong password">
+                                    <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                        <i class="fas fa-eye text-gray-400 hover:text-gray-600"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="password-strength bg-gray-200" id="passwordStrength"></div>
+                                    <p class="text-xs text-gray-500 mt-1" id="passwordHint">Password strength: Weak</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                    <input type="text" name="first_name" id="first_name" required
+                                           class="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="First name">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                    <input type="text" name="last_name" id="last_name" required
+                                           class="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="Last name">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" onclick="nextStep(1)" class="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all transform hover:scale-105">
+                            Continue <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+
+                    <!-- Step 2: Personal Details -->
+                    <div class="form-step" id="step-2">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Personal Details</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-phone text-gray-400"></i>
+                                    </div>
+                                    <input type="tel" name="phoneNumber" id="phoneNumber" required
+                                           class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="+1 (555) 123-4567">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-map-marker-alt text-gray-400"></i>
+                                    </div>
+                                    <textarea name="address" id="address" required rows="3"
+                                              class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                              placeholder="Enter your full address"></textarea>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">PAN Card Number</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-id-card text-gray-400"></i>
+                                    </div>
+                                    <input type="text" name="panCard" id="panCard" required
+                                           class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                           placeholder="ABCDE1234F"
+                                           pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}">
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Format: ABCDE1234F</p>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-4 mt-6">
+                            <button type="button" onclick="prevStep(2)" class="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                                <i class="fas fa-arrow-left mr-2"></i> Back
+                            </button>
+                            <button type="button" onclick="nextStep(2)" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all">
+                                Continue <i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Document Upload -->
+                    <div class="form-step" id="step-3">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Document Upload</h3>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
+                                <div class="file-drop-zone rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="file" name="profile_pic" id="profile_pic" accept="image/*" class="hidden">
+                                    <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+                                    <p class="text-gray-600">Click to upload or drag and drop</p>
+                                    <p class="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</p>
+                                </div>
+                                <div id="profile-preview" class="mt-2 hidden">
+                                    <img class="w-20 h-20 rounded-full object-cover mx-auto border-2 border-gray-300">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">PAN Card Image</label>
+                                <div class="file-drop-zone rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="file" name="panCard_Image" id="panCard_Image" accept="image/*" class="hidden">
+                                    <i class="fas fa-id-card text-gray-400 text-3xl mb-2"></i>
+                                    <p class="text-gray-600">Click to upload or drag and drop</p>
+                                    <p class="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</p>
+                                </div>
+                                <div id="pancard-preview" class="mt-2 hidden">
+                                    <img class="w-32 h-20 rounded-lg object-cover mx-auto border-2 border-gray-300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-4 mt-6">
+                            <button type="button" onclick="prevStep(3)" class="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                                <i class="fas fa-arrow-left mr-2"></i> Back
+                            </button>
+                            <button type="submit" class="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all transform hover:scale-105">
+                                <i class="fas fa-check mr-2"></i> Create Account
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Login Link -->
+                <div class="text-center mt-6">
+                    <p class="text-sm text-gray-600">
+                        Already have an account? 
+                        <a href="{% url 'login' %}" class="text-blue-600 hover:text-blue-800 font-medium">Sign in here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 3;
+
+        function nextStep(step) {
+            if (validateStep(step)) {
+                document.getElementById(`step-${step}`).classList.remove('active');
+                currentStep++;
+                document.getElementById(`step-${currentStep}`).classList.add('active');
+                updateProgress();
+            }
+        }
+
+        function prevStep(step) {
+            document.getElementById(`step-${step}`).classList.remove('active');
+            currentStep--;
+            document.getElementById(`step-${currentStep}`).classList.add('active');
+            updateProgress();
+        }
+
+        function updateProgress() {
+            for (let i = 1; i <= totalSteps; i++) {
+                const progressBar = document.getElementById(`step-${i}-progress`);
+                if (i <= currentStep) {
+                    progressBar.classList.add('bg-blue-600');
+                    progressBar.classList.remove('bg-gray-300');
+                } else {
+                    progressBar.classList.add('bg-gray-300');
+                    progressBar.classList.remove('bg-blue-600');
+                }
+            }
+        }
+
+        function validateStep(step) {
+            const stepElement = document.getElementById(`step-${step}`);
+            const requiredFields = stepElement.querySelectorAll('input[required], textarea[required]');
+            let isValid = true;
+
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('border-red-500');
+                    isValid = false;
+                } else {
+                    field.classList.remove('border-red-500');
+                }
+            });
+
+            return isValid;
+        }
+
+        // Password strength indicator
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            const strengthBar = document.getElementById('passwordStrength');
+            const strengthText = document.getElementById('passwordHint');
+            
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/)) strength++;
+            if (password.match(/[A-Z]/)) strength++;
+            if (password.match(/[0-9]/)) strength++;
+            if (password.match(/[^a-zA-Z0-9]/)) strength++;
+
+            const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
+            const texts = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+            
+            strengthBar.className = `password-strength ${colors[strength - 1] || 'bg-gray-200'}`;
+            strengthText.textContent = `Password strength: ${texts[strength - 1] || 'Very Weak'}`;
+        });
+
+        // Password toggle
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordField = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+
+        // File upload handling
+        function setupFileUpload(inputId, previewId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            const dropZone = input.closest('.file-drop-zone');
+
+            dropZone.addEventListener('click', () => input.click());
+
+            input.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.querySelector('img').src = e.target.result;
+                        preview.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Drag and drop
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    input.files = files;
+                    input.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+
+        setupFileUpload('profile_pic', 'profile-preview');
+        setupFileUpload('panCard_Image', 'pancard-preview');
+
+        // PAN card format validation
+        document.getElementById('panCard').addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    </script>
+</body>
+</html>

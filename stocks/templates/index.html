@@ -1,0 +1,534 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="welcome-section">
+            <h1>Welcome back, {{ user.first_name|default:user.username }}!</h1>
+            <p class="dashboard-subtitle">Here's your portfolio overview</p>
+        </div>
+        <div class="quick-actions">
+            <a href="{% url 'stocks' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Buy Stocks
+            </a>
+            <a href="{% url 'stocks' %}" class="btn btn-outline">
+                <i class="fas fa-chart-line"></i> Market
+            </a>
+        </div>
+    </div>
+
+    <!-- Portfolio Summary Cards -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="card-icon total-value">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="card-content">
+                <h3>${{ total_value|floatformat:2 }}</h3>
+                <p>Total Portfolio Value</p>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="card-icon invested">
+                <i class="fas fa-arrow-up"></i>
+            </div>
+            <div class="card-content">
+                <h3>${{ invested|floatformat:2 }}</h3>
+                <p>Total Invested</p>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="card-icon gains {% if gains >= 0 %}positive{% else %}negative{% endif %}">
+                <i class="fas fa-{% if gains >= 0 %}chart-line{% else %}chart-line-down{% endif %}"></i>
+            </div>
+            <div class="card-content">
+                <h3 class="{% if gains >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ gains|floatformat:2 }}%
+                </h3>
+                <p>Total Gains/Loss</p>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="card-icon stocks-count">
+                <i class="fas fa-layer-group"></i>
+            </div>
+            <div class="card-content">
+                <h3>{{ data|length }}</h3>
+                <p>Stocks Owned</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Holdings Table -->
+    <div class="holdings-section">
+        <div class="section-header">
+            <h2>Your Holdings</h2>
+            <div class="table-controls">
+                <input type="text" id="searchInput" placeholder="Search holdings..." class="search-input">
+                <select id="sortSelect" class="sort-select">
+                    <option value="name">Sort by Name</option>
+                    <option value="value">Sort by Value</option>
+                    <option value="gains">Sort by Gains</option>
+                </select>
+            </div>
+        </div>
+
+        {% if data %}
+            <div class="holdings-table-container">
+                <table class="holdings-table" id="holdingsTable">
+                    <thead>
+                        <tr>
+                            <th>Stock</th>
+                            <th>Ticker</th>
+                            <th>Purchase Price</th>
+                            <th>Current Price</th>
+                            <th>Quantity</th>
+                            <th>Total Value</th>
+                            <th>Gain/Loss</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in data %}
+                        <tr class="holding-row">
+                            <td>
+                                <div class="stock-info">
+                                    <div class="stock-avatar">{{ item.stock.ticker|slice:":2" }}</div>
+                                    <div>
+                                        <strong>{{ item.stock.name|truncatechars:20 }}</strong>
+                                        <small class="text-muted">{{ item.stock.ticker }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="ticker-badge">{{ item.stock.ticker }}</span></td>
+                            <td>${{ item.purchase_price|floatformat:2 }}</td>
+                            <td>
+                                <span id="{{ item.stock.ticker }}_current">${{ item.stock.curr_price|floatformat:2 }}</span>
+                            </td>
+                            <td>
+                                <span class="quantity-badge">{{ item.purchase_quantity }}</span>
+                            </td>
+                            <td>
+                                <strong>${{ item.total_value|floatformat:2 }}</strong>
+                            </td>
+                            <td>
+                                <span class="gain-loss {% if item.gain_loss >= 0 %}positive{% else %}negative{% endif %}">
+                                    {% if item.gain_loss >= 0 %}+{% endif %} ${{ item.gain_loss|floatformat:2 }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-action buy" data-bs-toggle="modal" data-bs-target="#buyModal-{{ item.stock.id }}">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button class="btn-action sell" data-bs-toggle="modal" data-bs-target="#sellModal-{{ item.stock.id }}">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h3>No Holdings Yet</h3>
+                <p>Start building your portfolio by purchasing your first stock</p>
+                <a href="{% url 'stocks' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Buy Your First Stock
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.welcome-section h1 {
+    color: #2c3e50;
+    font-size: 2.2rem;
+    margin-bottom: 5px;
+}
+
+.dashboard-subtitle {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 15px;
+}
+
+.btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-outline {
+    background: white;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.btn-outline:hover {
+    background: #667eea;
+    color: white;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.card-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.total-value { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.invested { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.gains.positive { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.gains.negative { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.stocks-count { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+.card-content h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    color: #2c3e50;
+}
+
+.card-content p {
+    color: #7f8c8d;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.holdings-section {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.section-header h2 {
+    color: #2c3e50;
+    font-size: 1.8rem;
+    margin: 0;
+}
+
+.table-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.search-input, .sort-select {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+}
+
+.search-input:focus, .sort-select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.holdings-table-container {
+    overflow-x: auto;
+}
+
+.holdings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.holdings-table th,
+.holdings-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.holdings-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.holding-row:hover {
+    background: #f8f9fa;
+}
+
+.stock-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stock-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.ticker-badge {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.quantity-badge {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.gain-loss {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.gain-loss.positive {
+    color: #4caf50;
+}
+
+.gain-loss.negative {
+    color: #f44336;
+}
+
+.text-success {
+    color: #4caf50 !important;
+}
+
+.text-danger {
+    color: #f44336 !important;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-action {
+    width: 35px;
+    height: 35px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.btn-action.buy {
+    background: #e8f5e8;
+    color: #4caf50;
+}
+
+.btn-action.buy:hover {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-action.sell {
+    background: #ffebee;
+    color: #f44336;
+}
+
+.btn-action.sell:hover {
+    background: #f44336;
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    color: #bdc3c7;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    color: #7f8c8d;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .summary-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .table-controls {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .search-input, .sort-select {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', function() {
+    const filter = this.value.toLowerCase();
+    const rows = document.querySelectorAll('.holding-row');
+    
+    rows.forEach(row => {
+        const stockName = row.querySelector('.stock-info strong').textContent.toLowerCase();
+        const ticker = row.querySelector('.ticker-badge').textContent.toLowerCase();
+        
+        if (stockName.includes(filter) || ticker.includes(filter)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+
+// Sort functionality
+document.getElementById('sortSelect').addEventListener('change', function() {
+    const table = document.getElementById('holdingsTable');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('.holding-row'));
+    
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch(this.value) {
+            case 'name':
+                aValue = a.querySelector('.stock-info strong').textContent;
+                bValue = b.querySelector('.stock-info strong').textContent;
+                return aValue.localeCompare(bValue);
+            case 'value':
+                aValue = parseFloat(a.cells[5].textContent.replace('$', ''));
+                bValue = parseFloat(b.cells[5].textContent.replace('$', ''));
+                return bValue - aValue;
+            case 'gains':
+                aValue = parseFloat(a.cells[6].textContent.replace(/[$+]/g, ''));
+                bValue = parseFloat(b.cells[6].textContent.replace(/[$+]/g, ''));
+                return bValue - aValue;
+        }
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+});
+</script>
+{% endblock %}
